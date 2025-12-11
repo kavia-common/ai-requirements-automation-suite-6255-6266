@@ -233,3 +233,33 @@ class AllureReportServe(MethodView):
         if not report_dir or not os.path.isdir(report_dir):
             raise NotFound("Allure report not available")
         return send_from_directory(report_dir, path)
+
+
+@blp.route("/jobs/<int:job_id>/allure/<path:path>")
+class AllureJobStatic(MethodView):
+    """
+    Serve Allure report for the latest run of a job at a stable mount point.
+
+    Mounted at: /api/jobs/<job_id>/allure/<path>
+    Example index.html: /api/jobs/1/allure/index.html
+    """
+    # PUBLIC_INTERFACE
+    def get(self, job_id: int, path: str):
+        """
+        PUBLIC_INTERFACE
+        summary: Serve Allure static by job
+        description: Finds the most recent run for a job and serves its Allure report statics.
+        responses:
+          200: Static file
+        """
+        run = (
+            Run.query.filter_by(job_id=job_id)
+            .order_by(Run.created_at.desc())
+            .first()
+        )
+        if not run:
+            raise NotFound("No runs found for job")
+        report_dir = run.allure_report_path
+        if not report_dir or not os.path.isdir(report_dir):
+            raise NotFound("Allure report not available")
+        return send_from_directory(report_dir, path)

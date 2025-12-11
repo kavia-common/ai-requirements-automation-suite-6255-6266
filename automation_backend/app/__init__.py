@@ -16,8 +16,12 @@ def create_app() -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # CORS
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    # CORS: allow React frontend default origin
+    CORS(
+        app,
+        resources={r"/*": {"origins": ["http://localhost:3000"]}},
+        supports_credentials=True,
+    )
 
     # OpenAPI / API docs config
     app.config["API_TITLE"] = "Requirements Automation API"
