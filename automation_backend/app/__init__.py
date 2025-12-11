@@ -38,6 +38,13 @@ def create_app() -> Flask:
 
     # Register blueprints
     api = Api(app)
+
+    # OpenAPI tags metadata for better documentation grouping
+    app.config["OPENAPI_TAGS"] = [
+        {"name": "Health", "description": "Health check route"},
+        {"name": "Pipeline", "description": "Upload, parse, generate, execute, and report"},
+    ]
+
     api.register_blueprint(health_blp)
     api.register_blueprint(pipeline_blp)
 
