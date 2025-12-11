@@ -1,5 +1,6 @@
 import os
-from flask import Flask
+import logging
+from flask import Flask, jsonify, redirect, url_for
 from flask_cors import CORS
 from flask_smorest import Api
 from .extensions import db, ma, migrate
@@ -15,6 +16,10 @@ def create_app() -> Flask:
     """
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # Basic logger to surface key startup info quickly
+    logging.basicConfig(level=logging.INFO)
+    log = logging.getLogger("automation_backend")
 
     # CORS: allow React frontend default origin
     CORS(
@@ -48,7 +53,7 @@ def create_app() -> Flask:
     api.register_blueprint(health_blp)
     api.register_blueprint(pipeline_blp)
 
-    # Ensure storage directories exist
+    # Ensure storage directories exist (fast, non-blocking)
     for path in [
         app.config["UPLOAD_FOLDER"],
         app.config["ARTIFACTS_FOLDER"],
@@ -58,6 +63,36 @@ def create_app() -> Flask:
         app.config["ALLURE_REPORT_FOLDER"],
     ]:
         os.makedirs(path, exist_ok=True)
+
+    # Add ultra-lightweight helper routes to reduce any chance of docs/health appearing to hang
+    @app.get("/openapi.json")
+    def openapi_json_redirect():
+        """
+        Return the dynamically generated OpenAPI JSON.
+        Flask-Smorest publishes it under /docs/openapi.json; expose at /openapi.json as well.
+        """
+        # Using redirect keeps it simple and avoids heavy serialization here
+        return redirect("/docs/openapi.json", code=302)
+
+    @app.get("/_info")
+    def info():
+        """
+        Minimal service info endpoint purely for diagnostics.
+        """
+        return jsonify({
+            "service": "Requirements Automation API",
+            "version": app.config.get("API_VERSION", "v1"),
+            "health": "ok"
+        })
+
+    # Log key config without touching DB
+    try:
+        db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "sqlite:///automation_dev.db")
+        log.info("Startup: Using database URI (masked): %s", ("sqlite" if db_uri.startswith("sqlite") else db_uri.split('@')[-1]))
+        log.info("Storage base: %s", app.config.get("STORAGE_BASE"))
+    except Exception:
+        # Never let logging break startup
+        pass
 
     return app
 

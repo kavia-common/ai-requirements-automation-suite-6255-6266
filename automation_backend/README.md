@@ -33,7 +33,17 @@ Minimal smoke test checklist
 6) Open Allure (if generated):
    http://localhost:3001/api/jobs/1/allure/index.html
 
-Notes
+Health and docs
+- Health root:            curl -i http://localhost:3001/
+- Health API:             curl -i http://localhost:3001/api/health
+- OpenAPI JSON (alias):   curl -i http://localhost:3001/openapi.json
+- Swagger UI:             http://localhost:3001/docs/
+
+Troubleshooting
+- "Port 3001 is in use": A server is already running. Do not restart; verify it is healthy:
+    curl -i http://localhost:3001/ && curl -i http://localhost:3001/api/health
+- If importing fails due to missing dependencies, run:
+    pip install -r requirements.txt
 - If Allure CLI is not installed, the results will still be collected in allure-results, but the static report may be empty.
 - Storage folders are created under STORAGE_BASE (default: ./storage).
 - CORS origin http://localhost:3000 is allowed by default.
